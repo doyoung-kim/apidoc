@@ -1,0 +1,75 @@
+##############
+### local
+##############
+
+server:
+  port: 8085
+  forward-headers-strategy: framework
+  
+
+###############################################################################################################################################################################
+## Swagger Target Service Names and Context-paths
+## 1. - name : [service name] ==> same as SwaggerUrl group. (see also org.springdoc.core.AbstractSwaggerUiConfigProperties.SwaggerUrl.SwaggerUrl(String group, String url)) 
+##      contextPath : Service's context path 
+##
+## < Notice >
+## 2. Write the [service name] when service do not have context-path(/) like 'sample-api' or 'sample-api2'
+##  - ex-2: swagger url --> http://sample-api.sa-app.svc/swagger-ui/index.html
+##
+## 3. 'sample-api2' service have context-path 'ppon' then see - name: sample-api2 / contextPath: ppon
+##  - ex-3: swagger url --> http://sample-api2.sa-app.svc/ppon/swagger-ui/index.html
+###############################################################################################################################################################################
+services:
+  target:
+  - name: sample-api
+    contextPath: sample-api
+  - name: sample-api2
+    contextPath: sample-api2
+
+
+#######################################################################################################################################
+## Spring cloud gateway routes 
+##  - Add route info of Service when you add servie.target
+##
+## 1. id : Write same name of services.target.name 
+## 2. uri : Write Kubernetes internal access url and port like 'poc-be-inetapp' uri
+## 3. predicates: - Path :  
+##                        - Add [service name] when service do not have context-path like 'sample-api'
+##                        - Add [context-path] when service have context-path like 'sample-api2'
+## 4. filters: - RewritePath:
+##                        - Add [service name] when service do not have context-path like 'sample-api'
+##                        - Add [context-path] when service have context-path like 'sample-api2'
+#######################################################################################################################################
+spring:
+  application:
+    name: apidoc
+  cloud:
+    gateway:   
+      routes:
+      - id: sample-api
+        uri: http://localhost:8088
+        predicates:
+          - Path=/sample-api/**
+        filters:
+          - RewritePath=/sample-api(?<segment>/?.*), /$\{segment}
+      - id: sample-api2
+        uri: http://localhost:9088
+        predicates:
+          - Path=/sample-api2/**
+        filters:
+          - RewritePath=/sample-api2(?<segment>/?.*), /$\{segment}
+
+
+springdoc:
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha
+    disable-swagger-default-url: true
+    doc-expansion: none
+
+
+logging:
+  level:
+    org.springframework.cloud.gateway: info
+    sun.rmi: info
+    com.example: trace
